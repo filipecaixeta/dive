@@ -65,8 +65,8 @@ def load_raw(data: bytes, name: str) -> np.ndarray:
             tool = str(local) if local.exists() else shutil.which("gpr_tools")
             if not tool:
                 raise RuntimeError(
-                    "Este arquivo .GPR precisa do conversor da GoPro (gpr_tools), que não está instalado. "
-                    "Alternativa: converta para DNG no Adobe DNG Converter.") from first
+                    "This .GPR file needs the GoPro converter (gpr_tools), which is not installed. "
+                    "Alternative: convert it to DNG with Adobe DNG Converter.") from first
             dng = Path(td) / "out.dng"
             subprocess.run([tool, "-i", str(src), "-o", str(dng)], check=True, capture_output=True)
             lin = _decode(dng)

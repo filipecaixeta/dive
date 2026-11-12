@@ -1,17 +1,17 @@
 # Dive Color
 
-Correção de cor para fotos e vídeos de mergulho, pensado principalmente para GoPro. Frontend em HTML/JS, processamento em Python (FastAPI + OpenCV + PyTorch + ffmpeg).
+Color correction for underwater photos and videos, built mainly for GoPro footage. HTML/JS frontend, Python processing (FastAPI + OpenCV + PyTorch + ffmpeg).
 
-![Dive Color: antes e depois](docs/screenshot.jpg)
+![Dive Color: before and after](docs/screenshot.jpg)
 
-## Instalação
+## Installation
 
-Requisitos:
+Requirements:
 
-- macOS, Linux ou Windows (WSL) com **Python 3.12** (3.13 também serve)
-- **ffmpeg** para vídeo
-- Opcional: **cmake** e **git**, para compilar o conversor de RAW da GoPro (`.GPR`)
-- Opcional: GPU (Apple Silicon via MPS ou NVIDIA via CUDA). Sem GPU roda na CPU, mais devagar.
+- macOS, Linux or Windows (WSL) with **Python 3.12** (3.13 also works)
+- **ffmpeg** for video
+- Optional: **cmake** and **git**, to build the GoPro RAW converter (`.GPR`)
+- Optional: a GPU (Apple Silicon via MPS or NVIDIA via CUDA). Without one it runs on the CPU, more slowly.
 
 macOS (Homebrew):
 
@@ -25,7 +25,7 @@ Ubuntu/Debian:
 sudo apt install python3.12 python3.12-venv ffmpeg cmake git
 ```
 
-Clone e rode:
+Clone and run:
 
 ```bash
 git clone git@github.com:filipecaixeta/dive.git
@@ -33,96 +33,96 @@ cd dive
 ./run.sh
 ```
 
-Na primeira execução o `run.sh` cria o `.venv`, instala as dependências do `requirements.txt` e compila o `gpr_tools` (se houver `cmake`). Os modelos de IA (Depth Anything V2, Grounding DINO, SAM 2) são baixados do Hugging Face na primeira vez que cada recurso é usado.
+On the first run, `run.sh` creates `.venv`, installs the dependencies from `requirements.txt` and builds `gpr_tools` (if `cmake` is available). The AI models (Depth Anything V2, Grounding DINO, SAM 2) are downloaded from Hugging Face the first time each feature is used.
 
-Abra http://localhost:8765, arraste uma foto ou vídeo e ajuste os controles. O preview atualiza enquanto você arrasta. Para usar outra porta: `PORT=9000 ./run.sh`.
+Open http://localhost:8765, drop in a photo or video and adjust the controls. The preview updates while you drag. To use another port: `PORT=9000 ./run.sh`.
 
-## Estrutura
+## Layout
 
 ```
-backend/     servidor FastAPI e motor de correção (numpy, PyTorch, vídeo, pele, RAW)
-frontend/    interface (HTML/CSS/JS, sem build)
-docs/        imagem do README
-run.sh       cria o ambiente e sobe o servidor
+backend/     FastAPI server and correction engine (numpy, PyTorch, video, skin, RAW)
+frontend/    user interface (HTML/CSS/JS, no build step)
+docs/        README image
+run.sh       sets up the environment and starts the server
 ```
 
-Pastas criadas em tempo de execução e fora do git: `uploads/` (vídeos enviados), `output/` (vídeos exportados), `tools/` (gpr_tools), `media/` (fotos e vídeos locais de teste).
+Folders created at runtime and kept out of git: `uploads/` (uploaded videos), `output/` (exported videos), `tools/` (gpr_tools), `media/` (local test photos and videos).
 
-## O que entra
+## Input
 
-| Tipo | Formatos | Observação |
+| Type | Formats | Notes |
 |---|---|---|
-| Foto | JPEG, PNG, TIFF | 8 ou 16 bits |
-| Foto RAW | **.GPR (GoPro)**, DNG, CR2/CR3, NEF, ARW, ORF, RW2, RAF | 16-bit linear, sem o balanço de branco da câmera. GPR passa pelo `gpr_tools` da GoPro (a LibRaw não decodifica o codec VC-5) |
-| Vídeo | MP4, MOV (HEVC/H.264, 8 ou 10-bit) | GP-Log: carregue o LUT oficial da GoPro em "LUT de entrada" |
+| Photo | JPEG, PNG, TIFF | 8 or 16 bits |
+| RAW photo | **.GPR (GoPro)**, DNG, CR2/CR3, NEF, ARW, ORF, RW2, RAF | 16-bit linear, without the camera's white balance. GPR goes through GoPro's `gpr_tools` (LibRaw cannot decode the VC-5 codec) |
+| Video | MP4, MOV (HEVC/H.264, 8 or 10-bit) | GP-Log: load the official GoPro LUT under "Input LUT" |
 
-## O que sai
+## Output
 
-- Foto: JPEG 95 (4:4:4, EXIF preservado), TIFF 16-bit, LUT `.cube`.
-- Vídeo: MP4 HEVC 10-bit (entrega) ou **MOV ProRes 422 HQ** (edição). Durante a exportação, o cartão de progresso mostra uma prévia ao vivo (o rastreamento do mergulhador e depois o frame final), atualizada a cada ~0,5 s. O codificador é escolhido pelo que existir: VideoToolbox no Mac, NVENC em GPU NVIDIA, libx265/prores_ks por software.
+- Photo: JPEG 95 (4:4:4, EXIF preserved), 16-bit TIFF, `.cube` LUT.
+- Video: 10-bit HEVC MP4 (delivery) or **ProRes 422 HQ MOV** (editing). During export, the progress card shows a live preview (diver tracking, then the final frame), refreshed every ~0.5 s. The encoder is picked from what is available: VideoToolbox on Mac, NVENC on NVIDIA GPUs, libx265/prores_ks in software.
 
-## Dois métodos de correção
+## Two correction methods
 
-- **Clássico** (padrão): estima a névoa pela cor (dark channel subaquático) e aplica um balanço de branco por cena. Rápido, robusto, sem IA.
-- **Profundidade (beta)**: estima a distância de cada ponto com o Depth Anything V2 e aplica o modelo físico do Sea-thru (Akkaynak & Treibitz, 2019): névoa e perda de cor calculadas por distância. Adaptações para GoPro grande-angular: mapa de névoa por posição (vinheta e gradiente de luz), detecção de água pela cor e evidência de névoa para objetos distantes. Cores neutras mais fiéis e planos médios mais limpos; ainda erra em estruturas translúcidas e pode fechar demais as sombras.
-  Variáveis: `DIVE_DEPTH_MODEL=Small|Base|Large` (padrão Base), `DIVE_DEPTH_INPUT` (resolução de entrada, padrão 756).
+- **Classic** (default): estimates haze from color (underwater dark channel) and applies a per-scene white balance. Fast, robust, no AI.
+- **Depth (beta)**: estimates the distance of each point with Depth Anything V2 and applies the Sea-thru physical model (Akkaynak & Treibitz, 2019): haze and color loss computed per distance. Adaptations for wide-angle GoPro footage: position-dependent haze map (vignetting and light gradient), water detection by color, and haze evidence for distant objects. More faithful neutral colors and cleaner mid-ground; it still struggles with translucent structures and can crush shadows.
+  Variables: `DIVE_DEPTH_MODEL=Small|Base|Large` (default Base), `DIVE_DEPTH_INPUT` (input resolution, default 756).
 
-## Pele dos mergulhadores (backend/skin.py, backend/skin_track.py)
+## Diver skin tones (backend/skin.py, backend/skin_track.py)
 
-- Botão **"Pele: clicar no mergulhador"** (seção Balanço de branco). O clique escolhe o mergulhador; o Grounding DINO acha o corpo e as partes com pele (rosto, braços, pernas, mãos) e o SAM 2 recorta o contorno. Se o detector não reconhecer, o app recorta o que foi clicado e avisa.
-- A correção leva o **matiz** da pele para a linha da pele do vetorscópio (~123°, a mesma para qualquer etnia), mantendo brilho e saturação: não clareia pele escura. É aplicada no mergulhador inteiro (mesma distância = mesma perda de cor): cheia na pele, metade no resto, quase nada no equipamento preto. Controle "Correção de pele".
-- A máscara de cada mergulhador tem borda suavizada e pode ser vista e ajustada: modo **"Máscara"** na barra de visualização (rosa = onde e quanto a correção atua), **"Suavidade da borda da máscara"** e **"Só a pele ↔ mergulhador inteiro"** (padrão no meio: no extremo "inteiro", o equipamento preto tende a avermelhar).
-- Vários mergulhadores por imagem (um clique cada). Primeiro clique ~15 s (carrega os modelos), depois alguns segundos.
-- **Vídeo:** os mergulhadores marcados no frame da tela são seguidos pelo vídeo (SAM 2 em fluxo, 5 amostras/s, para frente e para trás, parando quando o mergulhador some). A cor da pele é medida a cada amostra e suavizada no tempo. No M1 Pro, ~10 s de rastreamento por segundo de vídeo em que o mergulhador aparece.
-- Limites: correção sutil quando quase não há pele visível; mergulhador que sai e volta muito depois pode não ser reencontrado; só os mergulhadores marcados no frame atual entram na exportação.
+- **"Skin: click on the diver"** button (White balance section). The click picks the diver; Grounding DINO finds the body and the skin areas (face, arms, legs, hands) and SAM 2 cuts out the outline. If the detector does not recognize anything, the app cuts out what was clicked and warns you.
+- The correction moves the skin **hue** to the vectorscope skin line (~123°, the same for every ethnicity), keeping brightness and saturation: it does not lighten dark skin. It is applied to the whole diver (same distance = same color loss): full on skin, half on the rest, almost nothing on black gear. Control: "Skin correction".
+- Each diver's mask has a feathered edge and can be viewed and adjusted: **"Mask"** mode in the view bar (pink = where and how strongly the correction applies), **"Mask edge softness"** and **"Skin only ↔ whole diver"** (default in the middle: at the "whole" end, black gear tends to turn red).
+- Several divers per image (one click each). The first click takes ~15 s (loads the models), then a few seconds.
+- **Video:** divers marked on the current frame are tracked through the video (streaming SAM 2, 5 samples/s, forward and backward, stopping when the diver disappears). Skin color is measured at each sample and smoothed over time. On an M1 Pro, ~10 s of tracking per second of video in which the diver appears.
+- Limits: subtle correction when almost no skin is visible; a diver who leaves and comes back much later may not be found again; only divers marked on the current frame are included in the export.
 
-## Motor na GPU (backend/engine_torch.py)
+## GPU engine (backend/engine_torch.py)
 
-- PyTorch: MPS no Mac, CUDA em NVIDIA, CPU como último recurso. `DIVE_GPU=0` força o motor numpy.
-- Estatísticas (balanço de branco, níveis, ajustes do Sea-thru) continuam no numpy em 640 px. Mapas que não dependem dos controles e usam morfologia elíptica do OpenCV também, uma vez por imagem.
-- O motor numpy (`engine.py`) é a referência. `backend/tests/test_engines.py` compara os dois (60 dB hoje; falha abaixo de 45 dB): `.venv/bin/python backend/tests/test_engines.py foto.jpg`.
+- PyTorch: MPS on Mac, CUDA on NVIDIA, CPU as a last resort. `DIVE_GPU=0` forces the numpy engine.
+- Statistics (white balance, levels, Sea-thru fits) stay in numpy at 640 px. So do control-independent maps that use OpenCV elliptical morphology, once per image.
+- The numpy engine (`engine.py`) is the reference. `backend/tests/test_engines.py` compares the two (60 dB today; fails below 45 dB): `.venv/bin/python backend/tests/test_engines.py photo.jpg`.
 
-| No M1 Pro | numpy | GPU |
+| On an M1 Pro | numpy | GPU |
 |---|---|---|
-| Rascunho ao arrastar (760 px) | ~110 ms | ~20-40 ms |
+| Draft while dragging (760 px) | ~110 ms | ~20-40 ms |
 | Preview (1800 px) | ~450 ms | ~90-160 ms |
-| Preview, método profundidade | ~1500 ms | ~190 ms |
-| Exportar vídeo 4K (46 s) | ~9 min (2,7 fps) | ~4 min (5,7 fps) |
+| Preview, depth method | ~1500 ms | ~190 ms |
+| Export 4K video (46 s) | ~9 min (2.7 fps) | ~4 min (5.7 fps) |
 
-No vídeo, o limite passa a ser a própria GPU do M1 Pro (~170 ms de cálculo por frame em 4K). O caminho híbrido (conversões e mapas na CPU em paralelo, cálculo pesado na GPU) foi o mais rápido; todo na GPU ficou mais lento porque operações inteiras e transferências são caras no MPS e nada se sobrepunha.
+For video, the limit becomes the M1 Pro GPU itself (~170 ms of compute per 4K frame). The hybrid path (conversions and maps on the CPU in parallel, heavy math on the GPU) was the fastest; running everything on the GPU was slower because integer operations and transfers are expensive on MPS and nothing overlapped.
 
-## Como funciona o preview em tempo real
+## How the real-time preview works
 
-- Ao abrir a foto, o servidor guarda versões dela em 640, 760, 1024 e 1800 px, além da original.
-- O que não depende dos controles (luz de fundo, mapa de névoa, separação base/detalhe) é calculado uma vez e fica em cache.
-- Enquanto você arrasta um controle, o frontend pede um rascunho em 760 px (~110 ms). Sempre fica no máximo uma requisição em andamento, levando os parâmetros mais recentes.
-- Quando você solta (ou para por ~0,3 s), ele pede a versão de 1800 px (~0,5 s).
-- Exportar processa a resolução original com as mesmas estatísticas, então o arquivo final bate com o preview.
+- When a photo is opened, the server keeps versions of it at 640, 760, 1024 and 1800 px, plus the original.
+- Anything that does not depend on the controls (backscatter light, haze map, base/detail split) is computed once and cached.
+- While you drag a control, the frontend requests a 760 px draft (~110 ms). At most one request is in flight at a time, carrying the latest parameters.
+- When you release (or pause for ~0.3 s), it requests the 1800 px version (~0.5 s).
+- Export processes the original resolution with the same statistics, so the final file matches the preview.
 
 ## Pipeline (backend/engine.py)
 
-1. **Luz de fundo**: busca em quad-tree pela região de água aberta (lisa, azul/verde, sem vermelho).
-2. **Remoção de névoa**: dark channel subaquático (só G e B) com abertura morfológica, para não criar halo em ramos finos, refinado com filtro guiado. A inversão é feita só na camada base, então o ruído da água não é amplificado.
-3. **Recuperar vermelho/azul**: compensação de canal a partir do verde (Ancuti et al.).
-4. **Balanço de branco**: automático (shades-of-gray ponderado pelo primeiro plano) ou conta-gotas.
-5. **Cor da água**: a água aberta vai para um tom de azul escolhido em vez de virar cinza.
-6. **Níveis, exposição, ombro suave nos realces, curva S**.
-7. **Contraste local** com filtro que respeita bordas, reduzido na água aberta.
-8. **Vibração/saturação**, redução de ruído (mais forte na água), nitidez com limiar.
-9. **Intensidade geral**: mistura com o original.
+1. **Backscatter light**: quad-tree search for the open-water region (smooth, blue/green, no red).
+2. **Haze removal**: underwater dark channel (G and B only) with morphological opening, to avoid halos on thin branches, refined with a guided filter. The inversion is done only on the base layer, so water noise is not amplified.
+3. **Recover red/blue**: channel compensation from green (Ancuti et al.).
+4. **White balance**: automatic (foreground-weighted shades-of-gray) or eyedropper.
+5. **Water color**: open water goes to a chosen blue hue instead of turning gray.
+6. **Levels, exposure, soft highlight shoulder, S-curve**.
+7. **Local contrast** with an edge-aware filter, reduced in open water.
+8. **Vibrance/saturation**, noise reduction (stronger in the water), thresholded sharpening.
+9. **Overall strength**: blend with the original.
 
-## Vídeo (backend/video.py)
+## Video (backend/video.py)
 
-- Ao abrir um vídeo, ele vai para `uploads/` e um frame vira uma sessão de edição normal. A linha do tempo troca o frame usado para ajustar.
-- **Cor adaptativa** (padrão): na exportação, ele analisa ~2 frames por segundo, calcula as estatísticas da correção (luz de fundo, balanço de branco, níveis) em cada um e suaviza no tempo (mediana + gaussiana de ~1 s). A correção acompanha a mudança de cena sem piscar.
-- **Fixa neste frame**: usa a correção do frame na tela no vídeo inteiro.
-- Render: cada frame é lido em RGB 16-bit, o pipeline completo roda em 1280 px, e a correção é transferida para a resolução original como uma transformação de cor local 3x4 (guided filter colorido). Mantém todo o detalhe original, fica a ~35 dB do processamento direto em resolução máxima e é ~4x mais rápido. 6 frames em paralelo.
-- Saída: HEVC 10-bit (VideoToolbox), BT.709, áudio copiado, bitrate equivalente ao original. Vai para `output/`.
-- No M1 Pro, o vídeo de exemplo (46 s, 3840x3360, 30 fps) leva cerca de 8 a 9 minutos.
-- A conversão YUV→RGB declara a faixa e a matriz do arquivo. O padrão do ffmpeg (BT.601) desloca o matiz.
+- When a video is opened, it goes to `uploads/` and one frame becomes a regular editing session. The timeline changes the frame used for adjusting.
+- **Adaptive color** (default): on export, it analyzes ~2 frames per second, computes the correction statistics (backscatter light, white balance, levels) for each and smooths them over time (median + ~1 s Gaussian). The correction follows scene changes without flicker.
+- **Fixed to this frame**: uses the correction of the frame on screen for the whole video.
+- Render: each frame is read as 16-bit RGB, the full pipeline runs at 1280 px, and the correction is transferred to the original resolution as a local 3x4 color transform (color guided filter). It keeps all the original detail, lands ~35 dB from direct full-resolution processing and is ~4x faster. 6 frames in parallel.
+- Output: 10-bit HEVC (VideoToolbox), BT.709, audio copied, bitrate equivalent to the original. Goes to `output/`.
+- On an M1 Pro, the sample video (46 s, 3840x3360, 30 fps) takes about 8 to 9 minutes.
+- The YUV→RGB conversion declares the file's range and matrix. ffmpeg's default (BT.601) shifts the hue.
 
-## Exportação
+## Export
 
-- JPEG qualidade 95, 4:4:4, com EXIF e perfil de cor preservados.
-- TIFF 16-bit.
-- LUT `.cube` 33³ para vídeo (DaVinci, Premiere, Final Cut). Contém só a parte global da correção. Remoção de névoa e contraste local dependem da posição do pixel e não cabem num LUT.
+- JPEG quality 95, 4:4:4, with EXIF and color profile preserved.
+- 16-bit TIFF.
+- 33³ `.cube` LUT for video (DaVinci, Premiere, Final Cut). It contains only the global part of the correction. Haze removal and local contrast depend on pixel position and do not fit in a LUT.

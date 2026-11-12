@@ -1,7 +1,7 @@
 """
 Regression checks between the numpy reference engine and the GPU engine.
 
-    .venv/bin/python backend/tests/test_engines.py imagem.jpg [imagem ...]
+    .venv/bin/python backend/tests/test_engines.py photo.jpg [photo ...]
 
 Fails if the GPU render drifts from the reference (PSNR below threshold).
 """
@@ -38,7 +38,7 @@ def main(paths):
                 ref, _ = E.process(im, p, dict(st), cache=dict(s.caches["preview"]))
                 out, _ = G.process(im, p, dict(st), cache=dict(s.caches["preview"]))
                 v = psnr(ref, out)
-                flag = "ok " if v >= MIN_PSNR else "FALHOU"
+                flag = "ok " if v >= MIN_PSNR else "FAIL"
                 ok &= v >= MIN_PSNR
                 print(f"{flag} {Path(path).name:16s} {method:8s} {str(params)[:40]:40s} {v:5.1f} dB")
     return ok
@@ -47,5 +47,5 @@ def main(paths):
 if __name__ == "__main__":
     paths = sys.argv[1:] or sorted((ROOT / "media").glob("*.jpg"))
     if not paths:
-        sys.exit("Passe uma ou mais fotos: test_engines.py foto.jpg [...]")
+        sys.exit("Pass one or more photos: test_engines.py photo.jpg [...]")
     sys.exit(0 if main(paths) else 1)

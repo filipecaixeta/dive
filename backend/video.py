@@ -138,7 +138,7 @@ def grab_frame(path: Path, info: dict, t: float, long_side: int | None = None) -
            "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
     raw = subprocess.run(cmd, capture_output=True, check=True).stdout
     if len(raw) < w * h * 3:
-        raise RuntimeError("Não consegui ler o frame nesse ponto do vídeo")
+        raise RuntimeError("Could not read the frame at that point in the video")
     return np.frombuffer(raw[: w * h * 3], np.uint8).reshape(h, w, 3).copy()
 
 
@@ -364,7 +364,7 @@ class VideoJob:
             times.append(t_sample)
         proc.wait()
         if not rows:
-            raise RuntimeError("Não consegui decodificar o vídeo")
+            raise RuntimeError("Could not decode the video")
         values = _smooth(np.stack(rows), SMOOTH_SECONDS * ANALYSIS_FPS)
         return StatsTimeline(np.array(times), values, template, keys)
 
@@ -585,7 +585,7 @@ class VideoJob:
         dec.wait()
         if rc != 0:
             msg = enc.stderr.read().decode(errors="ignore")[-600:]
-            raise RuntimeError("Falha no encoder: " + msg)
+            raise RuntimeError("Encoder failed: " + msg)
 
 
 class _Cancelled(Exception):

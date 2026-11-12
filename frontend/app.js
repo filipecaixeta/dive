@@ -5,11 +5,11 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 
 const PRESETS = [
   { name: "Natural", p: {} },
-  { name: "Vibrante", p: { dehaze: 0.85, contrast: 0.4, vibrance: 0.55, local_contrast: 0.55, sharpen: 0.4 } },
-  { name: "Suave", p: { dehaze: 0.5, contrast: 0.12, vibrance: 0.15, local_contrast: 0.2, sharpen: 0.2 } },
-  { name: "Água turquesa", p: { water_hue: 180, water_protect: 0.6 } },
-  { name: "Azul profundo", p: { water_hue: 215, water_protect: 0.75, contrast: 0.35 } },
-  { name: "Água verde", p: { blue_comp: 0.8, red_comp: 1.3, dehaze: 0.8 } },
+  { name: "Vivid", p: { dehaze: 0.85, contrast: 0.4, vibrance: 0.55, local_contrast: 0.55, sharpen: 0.4 } },
+  { name: "Soft", p: { dehaze: 0.5, contrast: 0.12, vibrance: 0.15, local_contrast: 0.2, sharpen: 0.2 } },
+  { name: "Turquoise water", p: { water_hue: 180, water_protect: 0.6 } },
+  { name: "Deep blue", p: { water_hue: 215, water_protect: 0.75, contrast: 0.35 } },
+  { name: "Green water", p: { blue_comp: 0.8, red_comp: 1.3, dehaze: 0.8 } },
 ];
 // kept when applying a preset: they describe the photo/method, not the look
 const WB_KEYS = ["wb_mode", "wb_x", "wb_y", "method", "z_far"];
@@ -38,7 +38,7 @@ function toast(msg, isErr = false, ms = 3200) {
   clearTimeout(toast._t);
   toast._t = setTimeout(() => (t.hidden = true), ms);
 }
-function busy(on, text = "Processando…") {
+function busy(on, text = "Processing…") {
   $("#busy").hidden = !on;
   $("#busyText").textContent = text;
 }
@@ -157,7 +157,7 @@ async function pump() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ params: stripPrivate(state.params), view, quality, seq: mySeq }),
     });
-    if (res.status === 404) { toast("O servidor reiniciou. Abra a foto de novo.", true); return; }
+    if (res.status === 404) { toast("The server restarted. Open the photo again.", true); return; }
     if (!res.ok || res.status === 204) return;
     const stats = JSON.parse(res.headers.get("X-Stats") || "{}");
     const blob = await res.blob();
@@ -173,7 +173,7 @@ async function pump() {
     updateStats(stats);
     if (view === "result") drawHistogram(tmp);
   } catch (e) {
-    toast("Erro ao processar: " + e.message, true);
+    toast("Processing error: " + e.message, true);
   } finally {
     inFlight = false;
     if (!queued) $("#liveDot").classList.remove("on");
@@ -182,7 +182,7 @@ async function pump() {
 }
 
 function updateStats(s) {
-  const label = s.quality === "fast" ? "rascunho" : "preview";
+  const label = s.quality === "fast" ? "draft" : "preview";
   $("#statusText").textContent = `${label} · ${s.ms} ms`;
   $("#veilSwatch").style.background = s.veiling_light || "#333";
   if (s.wb_ref) {
@@ -372,7 +372,7 @@ for (const b of $$("#methodSeg button")) {
     state.params.method = b.dataset.method;
     if (state.params.method === "depth" && !depthLoaded) {
       depthLoaded = true;
-      toast("Calculando a profundidade com IA. Na primeira vez carrega o modelo e pode levar alguns segundos.", false, 6000);
+      toast("Estimating depth with AI. The first time it loads the model and may take a few seconds.", false, 6000);
     }
     syncAll();
     clearPresetHighlight();
@@ -394,8 +394,8 @@ function showSkin(divers) {
   document.body.classList.toggle("has-skin", state.skinDivers.length > 0);
   if (!state.skinDivers.length && state.view === "skinmask") { state.view = "split"; applyView(); }
   $("#skinClear").hidden = state.skinDivers.length === 0;
-  $("#skinBtn").textContent = state.skinDivers.length ? "Pele: adicionar mergulhador" : "Pele: clicar no mergulhador";
-  $("#skinCount").textContent = state.skinDivers.length === 1 ? "Pele (1 mergulhador)" : `Pele (${state.skinDivers.length} mergulhadores)`;
+  $("#skinBtn").textContent = state.skinDivers.length ? "Skin: add a diver" : "Skin: click on the diver";
+  $("#skinCount").textContent = state.skinDivers.length === 1 ? "Skin (1 diver)" : `Skin (${state.skinDivers.length} divers)`;
   const box = $("#skinBoxes");
   box.innerHTML = "";
   state.skinDivers.forEach((d, i) => {
@@ -403,13 +403,13 @@ function showSkin(divers) {
     el.className = "skin-box";
     const [x0, y0, x1, y1] = d.bbox;
     Object.assign(el.style, { left: x0 * 100 + "%", top: y0 * 100 + "%", width: (x1 - x0) * 100 + "%", height: (y1 - y0) * 100 + "%" });
-    el.innerHTML = `<span>mergulhador ${i + 1}</span>`;
+    el.innerHTML = `<span>diver ${i + 1}</span>`;
     box.appendChild(el);
   });
 }
 async function addSkin(x, y) {
   setSkinPicking(false);
-  busy(true, state.skinLoaded ? "Encontrando o mergulhador…" : "Encontrando o mergulhador… (na primeira vez carrega os modelos de IA, ~15 s)");
+  busy(true, state.skinLoaded ? "Finding the diver…" : "Finding the diver… (the first time loads the AI models, ~15 s)");
   try {
     const res = await fetch(`/api/images/${state.id}/skin`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -419,8 +419,8 @@ async function addSkin(x, y) {
     if (!res.ok) throw new Error(body.detail || res.statusText);
     state.skinLoaded = true;
     showSkin(body.divers);
-    if (!body.detected) toast("Não reconheci um mergulhador ali; usei o contorno do que foi clicado. Confira o resultado.", false, 5000);
-    else if (body.skin_px < 200) toast("Achei o mergulhador, mas quase sem pele visível: a correção vai ser sutil.", false, 5000);
+    if (!body.detected) toast("No diver recognized there; used the outline of what was clicked. Check the result.", false, 5000);
+    else if (body.skin_px < 200) toast("Found the diver, but with almost no visible skin: the correction will be subtle.", false, 5000);
     finalRender();
   } catch (e) {
     toast(e.message, true, 5000);
@@ -438,7 +438,7 @@ $("#skinClear").onclick = async () => {
 $("#showVeil").onclick = () => {
   const box = $("#veilBox");
   box.hidden = !box.hidden;
-  $("#showVeil").textContent = box.hidden ? "mostrar" : "ocultar";
+  $("#showVeil").textContent = box.hidden ? "show" : "hide";
   placeVeil();
 };
 
@@ -472,7 +472,7 @@ const isVideoFile = (f) => f.type.startsWith("video/") || /\.(mp4|mov|m4v|mkv|av
 async function openFile(file) {
   if (!file) return;
   if (isVideoFile(file)) return openVideo(file);
-  busy(true, "Analisando a foto…");
+  busy(true, "Analyzing the photo…");
   try {
     const fd = new FormData();
     fd.append("file", file);
@@ -484,7 +484,7 @@ async function openFile(file) {
     $("#timeline").hidden = true;
     loadImage(info, { newFile: true });
   } catch (e) {
-    toast("Não consegui abrir a foto: " + e.message, true);
+    toast("Could not open the photo: " + e.message, true);
   } finally {
     busy(false);
   }
@@ -519,7 +519,7 @@ function loadImage(info, { newFile = false } = {}) {
   $("#stageToolbar").hidden = false;
   $("#exportBtn").disabled = false;
   $("#panel").classList.remove("disabled");
-  if (newFile) { $("#veilBox").hidden = true; $("#showVeil").textContent = "mostrar"; }
+  if (newFile) { $("#veilBox").hidden = true; $("#showVeil").textContent = "show"; }
   syncAll();
   applyView();
   if (newFile || !sameSize) fit();
@@ -543,7 +543,7 @@ function uploadWithProgress(url, file, onProgress) {
       try { body = JSON.parse(xhr.responseText); } catch (_) {}
       xhr.status < 300 ? resolve(body) : reject(new Error(body.detail || xhr.statusText));
     };
-    xhr.onerror = () => reject(new Error("falha de rede"));
+    xhr.onerror = () => reject(new Error("network error"));
     const fd = new FormData();
     fd.append("file", file);
     xhr.send(fd);
@@ -551,14 +551,14 @@ function uploadWithProgress(url, file, onProgress) {
 }
 
 async function openVideo(file) {
-  busy(true, "Enviando vídeo… 0%");
+  busy(true, "Uploading video… 0%");
   try {
     const res = await uploadWithProgress("/api/videos", file, (f) => {
-      $("#busyText").textContent = f < 1 ? `Enviando vídeo… ${Math.round(f * 100)}%` : "Lendo o vídeo…";
+      $("#busyText").textContent = f < 1 ? `Uploading video… ${Math.round(f * 100)}%` : "Reading the video…";
     });
     state.video = res.video;
     state.videoMode = "adaptive";
-    $("#lutBtn").firstChild.textContent = "LUT de entrada";
+    $("#lutBtn").firstChild.textContent = "Input LUT";
     $("#lutBtn").classList.remove("on-lut");
     $("#lutClear").hidden = true;
     document.body.classList.add("is-video");
@@ -572,7 +572,7 @@ async function openVideo(file) {
     for (const b of $$("#colorMode button")) b.classList.toggle("on", b.dataset.mode === "adaptive");
     loadImage(res.image, { newFile: true });
   } catch (e) {
-    toast("Não consegui abrir o vídeo: " + e.message, true);
+    toast("Could not open the video: " + e.message, true);
   } finally {
     busy(false);
   }
@@ -582,7 +582,7 @@ let frameReq = 0;
 async function gotoFrame(t) {
   if (!state.video) return;
   const my = ++frameReq;
-  $("#statusText").textContent = "lendo frame…";
+  $("#statusText").textContent = "reading frame…";
   try {
     const res = await fetch(`/api/videos/${state.video.id}/frame`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t }),
@@ -595,11 +595,11 @@ async function gotoFrame(t) {
       Object.assign(state.params, { wb_mode: "auto", _picked: false });
       state.picking = false;
       vp.classList.remove("picking");
-      toast("O conta-gotas vale para um frame. Neste frame voltei para o automático; escolha a referência de novo se quiser.");
+      toast("The eyedropper applies to one frame. On this frame it switched back to auto; pick the reference again if you want.");
     }
     loadImage(info);
   } catch (e) {
-    toast("Não consegui ler o frame: " + e.message, true);
+    toast("Could not read the frame: " + e.message, true);
   }
 }
 
@@ -617,19 +617,19 @@ for (const b of $$("#colorMode button")) {
 async function setInputLut(file) {
   const fd = new FormData();
   if (file) fd.append("file", file);
-  busy(true, file ? "Aplicando LUT de entrada…" : "Removendo LUT…");
+  busy(true, file ? "Applying input LUT…" : "Removing LUT…");
   try {
     const t = +$("#scrub").value;
     const res = await fetch(`/api/videos/${state.video.id}/input_lut?t=${t}`, { method: "POST", body: fd });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
     const info = await res.json();
     state.video.input_lut = info.input_lut;
-    $("#lutBtn").firstChild.textContent = info.input_lut ? `LUT: ${info.input_lut}` : "LUT de entrada";
+    $("#lutBtn").firstChild.textContent = info.input_lut ? `LUT: ${info.input_lut}` : "Input LUT";
     $("#lutBtn").classList.toggle("on-lut", !!info.input_lut);
     $("#lutClear").hidden = !info.input_lut;
     loadImage(info);
   } catch (e) {
-    toast("Não consegui aplicar o LUT: " + e.message, true);
+    toast("Could not apply the LUT: " + e.message, true);
   } finally {
     busy(false);
   }
@@ -653,7 +653,7 @@ async function startVideoExport(scale, codec = "hevc") {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
     showJob(await res.json());
   } catch (e) {
-    toast("Falha ao iniciar a exportação: " + e.message, true);
+    toast("Failed to start the export: " + e.message, true);
   }
 }
 
@@ -663,17 +663,17 @@ function showJob(job) {
   box.classList.toggle("done", job.status === "done");
   box.classList.toggle("err", job.status === "error" || job.status === "cancelled");
   $("#jobBar").style.width = (job.progress * 100).toFixed(1) + "%";
-  const eta = job.eta == null ? "" : ` · faltam ${job.eta >= 60 ? Math.round(job.eta / 60) + " min" : job.eta + " s"}`;
+  const eta = job.eta == null ? "" : ` · ${job.eta >= 60 ? Math.round(job.eta / 60) + " min" : job.eta + " s"} left`;
   const text = {
-    queued: "Na fila…",
-    analyzing: "Analisando as cenas para manter a cor estável…",
-    tracking: "Seguindo o mergulhador pelo vídeo para corrigir a pele…",
-    rendering: `Frame ${job.frame} de ${job.frames} · ${job.fps.toFixed(1)} fps${eta}`,
-    done: `Pronto em ${Math.round(job.elapsed / 60)} min. Salvo em ${job.path}`,
-    error: "Erro: " + job.error,
-    cancelled: "Exportação cancelada.",
+    queued: "Queued…",
+    analyzing: "Analyzing scenes to keep the color stable…",
+    tracking: "Tracking the diver through the video to correct skin…",
+    rendering: `Frame ${job.frame} of ${job.frames} · ${job.fps.toFixed(1)} fps${eta}`,
+    done: `Done in ${Math.round(job.elapsed / 60)} min. Saved to ${job.path}`,
+    error: "Error: " + job.error,
+    cancelled: "Export cancelled.",
   }[job.status];
-  $("#jobTitle").textContent = job.status === "done" ? "Vídeo exportado" : "Exportando vídeo";
+  $("#jobTitle").textContent = job.status === "done" ? "Video exported" : "Exporting video";
   // live preview: refresh only when the server has a new frame
   if (job.preview_seq && job.preview_seq !== showJob.lastSeq) {
     showJob.lastSeq = job.preview_seq;
@@ -681,7 +681,7 @@ function showJob(job) {
     const next = new Image();
     next.onload = () => { img.src = next.src; $("#jobPreviewBox").hidden = false; };
     next.src = `/api/jobs/${job.id}/preview?seq=${job.preview_seq}`;
-    const what = job.preview_kind === "tracking" ? "rastreando" : "frame final";
+    const what = job.preview_kind === "tracking" ? "tracking" : "final frame";
     $("#jobPreviewCap").textContent = `${what} · ${fmtTime(job.preview_t)}`;
   }
   $("#jobText").textContent = text;
@@ -690,7 +690,7 @@ function showJob(job) {
   $("#jobClose").hidden = !finished;
   const dl = $("#jobDownload");
   dl.hidden = job.status !== "done";
-  dl.textContent = job.file && job.file.endsWith(".mov") ? "Baixar MOV" : "Baixar MP4";
+  dl.textContent = job.file && job.file.endsWith(".mov") ? "Download MOV" : "Download MP4";
   dl.href = `/api/jobs/${job.id}/download`;
   dl.download = job.file;
   clearTimeout(jobTimer);
@@ -743,7 +743,7 @@ for (const b of $$("#exportMenu button")) {
     const kind = b.dataset.export;
     if (kind === "video") return startVideoExport(+b.dataset.scale, b.dataset.codec || "hevc");
     const isLut = kind === "lut";
-    busy(true, isLut ? "Gerando LUT…" : "Processando em resolução máxima…");
+    busy(true, isLut ? "Generating LUT…" : "Processing at full resolution…");
     try {
       const url = isLut ? `/api/images/${state.id}/lut` : `/api/images/${state.id}/export`;
       const body = isLut ? { params: stripPrivate(state.params) } : { params: stripPrivate(state.params), format: kind, quality: 95 };
@@ -751,7 +751,7 @@ for (const b of $$("#exportMenu button")) {
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || res.statusText);
       const blob = await res.blob();
       const cd = res.headers.get("Content-Disposition") || "";
-      const name = (cd.match(/filename="([^"]+)"/) || [])[1] || "foto_corrigida.jpg";
+      const name = (cd.match(/filename="([^"]+)"/) || [])[1] || "photo_corrected.jpg";
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = name;
@@ -759,9 +759,9 @@ for (const b of $$("#exportMenu button")) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-      toast(isLut ? "LUT salvo. Ele aplica só a correção de cor global (sem remoção de névoa)." : `Salvo: ${name}`);
+      toast(isLut ? "LUT saved. It applies only the global color correction (no haze removal)." : `Saved: ${name}`);
     } catch (e) {
-      toast("Falha ao exportar: " + e.message, true);
+      toast("Export failed: " + e.message, true);
     } finally {
       busy(false);
     }

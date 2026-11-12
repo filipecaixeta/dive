@@ -69,7 +69,7 @@ def _get(image_id: str) -> Entry:
     with _sessions_lock:
         e = _sessions.get(image_id)
         if e is None:
-            raise HTTPException(404, "Imagem não encontrada (o servidor pode ter reiniciado). Envie de novo.")
+            raise HTTPException(404, "Image not found (the server may have restarted). Please upload it again.")
         _sessions.move_to_end(image_id)
         return e
 
@@ -78,7 +78,7 @@ def _encode_jpeg(rgb_u8: np.ndarray, quality: int = 90) -> bytes:
     ok, buf = cv2.imencode(".jpg", cv2.cvtColor(rgb_u8, cv2.COLOR_RGB2BGR),
                            [cv2.IMWRITE_JPEG_QUALITY, quality, cv2.IMWRITE_JPEG_PROGRESSIVE, 1])
     if not ok:
-        raise HTTPException(500, "Falha ao codificar JPEG")
+        raise HTTPException(500, "Failed to encode JPEG")
     return buf.tobytes()
 
 
@@ -98,12 +98,12 @@ class ExportReq(BaseModel):
 @app.post("/api/images")
 async def upload(file: UploadFile = File(...)):
     data = await file.read()
-    name = file.filename or "foto.jpg"
+    name = file.filename or "photo.jpg"
     if is_raw(name):
         try:
             rgb = await run_in_threadpool(load_raw, data, name)
         except Exception as e:
-            raise HTTPException(400, f"Não consegui abrir o RAW: {e}")
+            raise HTTPException(400, f"Could not open the RAW file: {e}")
         return await run_in_threadpool(_register_image, rgb, name)
     try:
         im = Image.open(io.BytesIO(data))
@@ -111,7 +111,7 @@ async def upload(file: UploadFile = File(...)):
         icc = im.info.get("icc_profile")
         im = ImageOps.exif_transpose(im).convert("RGB")
     except Exception:
-        raise HTTPException(400, "Formato de imagem não suportado")
+        raise HTTPException(400, "Unsupported image format")
     rgb = np.asarray(im, dtype=np.uint8).copy()
 
     if exif:
@@ -124,7 +124,7 @@ async def upload(file: UploadFile = File(...)):
         except Exception:
             exif = None
 
-    return _register_image(rgb, file.filename or "foto.jpg", exif, icc)
+    return _register_image(rgb, file.filename or "photo.jpg", exif, icc)
 
 
 def _register_image(rgb: np.ndarray, name: str, exif: bytes | None = None, icc: bytes | None = None) -> dict:
@@ -215,7 +215,7 @@ def add_skin(image_id: str, req: SkinReq):
     with e.lock:
         d = e.session.add_skin(req.x, req.y, p)
     if d is None:
-        raise HTTPException(422, "Não encontrei um mergulhador nesse ponto. Tente clicar no corpo ou na pele dele.")
+        raise HTTPException(422, "No diver found at that point. Try clicking on their body or skin.")
     return {"divers": _skin_list(e), "detected": d["detected"], "skin_px": int(d["skin"].sum())}
 
 
@@ -233,12 +233,12 @@ def export(image_id: str, req: ExportReq):
     p = Params.from_dict(req.params)
     with e.lock:
         out, _ = e.session.render(p, "full")
-    stem = Path(e.name).stem + "_corrigida"
+    stem = Path(e.name).stem + "_corrected"
 
     if req.format == "tiff16":
         ok, buf = cv2.imencode(".tif", cv2.cvtColor(to_u16(out), cv2.COLOR_RGB2BGR))
         if not ok:
-            raise HTTPException(500, "Falha ao gerar TIFF")
+            raise HTTPException(500, "Failed to write TIFF")
         return Response(buf.tobytes(), media_type="image/tiff",
                         headers={"Content-Disposition": f'attachment; filename="{stem}.tif"'})
 
@@ -283,7 +283,7 @@ _jobs: dict[str, vid.VideoJob] = {}
 def _get_video(video_id: str) -> VideoEntry:
     v = _videos.get(video_id)
     if v is None:
-        raise HTTPException(404, "Vídeo não encontrado (o servidor pode ter reiniciado). Envie de novo.")
+        raise HTTPException(404, "Video not found (the server may have restarted). Please upload it again.")
     return v
 
 
@@ -313,7 +313,7 @@ class VideoExportReq(BaseModel):
 def upload_video(file: UploadFile = File(...)):
     suffix = Path(file.filename or "video.mp4").suffix.lower() or ".mp4"
     if suffix not in VIDEO_EXT:
-        raise HTTPException(400, "Formato de vídeo não suportado")
+        raise HTTPException(400, "Unsupported video format")
     UPLOADS.mkdir(exist_ok=True)
     video_id = uuid.uuid4().hex[:12]
     path = UPLOADS / f"{video_id}{suffix}"
@@ -323,7 +323,7 @@ def upload_video(file: UploadFile = File(...)):
         info = vid.probe(path)
     except Exception:
         path.unlink(missing_ok=True)
-        raise HTTPException(400, "Não consegui ler esse vídeo")
+        raise HTTPException(400, "Could not read this video")
     v = VideoEntry(path, file.filename or path.name, info)
     _videos[video_id] = v
     t0 = round(info["duration"] * 0.3, 2)
@@ -341,7 +341,7 @@ def video_input_lut(video_id: str, t: float = 0.0, file: UploadFile | None = Fil
         try:
             v.input_lut = parse_cube(file.file.read().decode("utf-8", "ignore"), file.filename or "lut.cube")
         except Exception as e:
-            raise HTTPException(400, f"LUT inválido: {e}")
+            raise HTTPException(400, f"Invalid LUT: {e}")
     resp = _video_frame_image(v, t)
     resp["input_lut"] = v.input_lut.name if v.input_lut else None
     return resp
@@ -370,7 +370,7 @@ def video_export(video_id: str, req: VideoExportReq):
         fixed = e.session.stats_for(p)   # stats of the frame on screen
     OUTPUT.mkdir(exist_ok=True)
     codec = "prores" if req.codec == "prores" else "hevc"
-    suffix = "_corrigido" if req.scale >= 1 else "_corrigido_metade"
+    suffix = "_corrected" if req.scale >= 1 else "_corrected_half"
     ext = vid.video_codec_args(codec, 0)[1]
     out = OUTPUT / f"{Path(v.name).stem}{suffix}{'_prores' if codec == 'prores' else ''}{ext}"
     job_id = uuid.uuid4().hex[:12]
@@ -386,7 +386,7 @@ def video_export(video_id: str, req: VideoExportReq):
 def _get_job(job_id: str) -> vid.VideoJob:
     j = _jobs.get(job_id)
     if j is None:
-        raise HTTPException(404, "Exportação não encontrada")
+        raise HTTPException(404, "Export not found")
     return j
 
 
@@ -399,7 +399,7 @@ def job_status(job_id: str):
 def job_preview(job_id: str):
     j = _get_job(job_id)
     if j.preview_jpeg is None:
-        raise HTTPException(404, "Ainda sem preview")
+        raise HTTPException(404, "No preview yet")
     return Response(j.preview_jpeg, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
 
 
@@ -414,7 +414,7 @@ def job_cancel(job_id: str):
 def job_download(job_id: str):
     j = _get_job(job_id)
     if j.status != "done" or not j.out.exists():
-        raise HTTPException(409, "O vídeo ainda não está pronto")
+        raise HTTPException(409, "The video is not ready yet")
     media = "video/quicktime" if j.out.suffix == ".mov" else "video/mp4"
     return FileResponse(j.out, media_type=media, filename=j.out.name)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sobe o Dive Color em http://localhost:8765
+# Starts Dive Color at http://localhost:8765
 set -euo pipefail
 cd "$(dirname "$0")"
 if [ ! -d .venv ]; then
@@ -7,9 +7,9 @@ if [ ! -d .venv ]; then
   "$PY" -m venv .venv
   .venv/bin/pip install -q -r requirements.txt
 fi
-# conversor oficial da GoPro para fotos RAW (.GPR); compila uma vez se houver cmake
+# GoPro's official converter for RAW photos (.GPR); built once if cmake is available
 if [ ! -x tools/bin/gpr_tools ] && command -v cmake >/dev/null && command -v git >/dev/null; then
-  echo "Compilando o gpr_tools (GoPro RAW)..."
+  echo "Building gpr_tools (GoPro RAW)..."
   mkdir -p tools/bin
   [ -d tools/gpr-src ] || git clone --depth 1 -q https://github.com/gopro/gpr.git tools/gpr-src
   cmake -S tools/gpr-src -B tools/gpr-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 >/dev/null

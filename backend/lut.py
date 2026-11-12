@@ -67,7 +67,7 @@ def parse_cube(text: str, name: str = "") -> Lut3D:
         if key == "LUT_3D_SIZE":
             size = int(s.split()[1])
         elif key == "LUT_1D_SIZE":
-            raise ValueError("LUT 1D não suportado; use um LUT 3D (.cube)")
+            raise ValueError("1D LUTs are not supported; use a 3D LUT (.cube)")
         elif key == "DOMAIN_MIN":
             dmin = [float(v) for v in s.split()[1:4]]
         elif key == "DOMAIN_MAX":
@@ -80,6 +80,6 @@ def parse_cube(text: str, name: str = "") -> Lut3D:
             except ValueError:
                 continue
     if not size or len(rows) != size ** 3:
-        raise ValueError(f"LUT inválido: esperava {size}³ linhas, encontrei {len(rows)}")
+        raise ValueError(f"Invalid LUT: expected {size}³ rows, found {len(rows)}")
     table = np.array(rows, np.float32).reshape(size, size, size, 3)
     return Lut3D(table, dmin, dmax, name)

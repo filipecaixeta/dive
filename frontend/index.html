@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,17 +11,17 @@
   <div class="brand"><span class="dot"></span>Dive Color</div>
   <div class="filename" id="filename"></div>
   <div class="actions">
-    <label class="btn" for="fileInput">Abrir foto ou vídeo</label>
+    <label class="btn" for="fileInput">Open photo or video</label>
     <input type="file" id="fileInput" accept="image/*,video/*,.mp4,.mov,.dng,.gpr,.cr2,.cr3,.nef,.arw,.orf,.rw2,.raf" hidden>
     <div class="menu">
-      <button class="btn primary" id="exportBtn" disabled>Exportar &#9662;</button>
+      <button class="btn primary" id="exportBtn" disabled>Export &#9662;</button>
       <div class="menu-list" id="exportMenu">
-        <button data-export="video" data-scale="1" class="video-only">Vídeo MP4 · resolução original</button>
-        <button data-export="video" data-scale="0.5" class="video-only">Vídeo MP4 · metade da resolução</button>
-        <button data-export="video" data-scale="1" data-codec="prores" class="video-only">Vídeo ProRes 422 HQ · para edição</button>
+        <button data-export="video" data-scale="1" class="video-only">MP4 video · original resolution</button>
+        <button data-export="video" data-scale="0.5" class="video-only">MP4 video · half resolution</button>
+        <button data-export="video" data-scale="1" data-codec="prores" class="video-only">ProRes 422 HQ video · for editing</button>
         <div class="menu-sep video-only"></div>
-        <button data-export="jpeg"><span class="photo-only">JPEG resolução máxima</span><span class="video-only">JPEG deste frame</span></button>
-        <button data-export="tiff16">TIFF 16-bit<span class="video-only"> deste frame</span></button>
+        <button data-export="jpeg"><span class="photo-only">JPEG full resolution</span><span class="video-only">JPEG of this frame</span></button>
+        <button data-export="tiff16">TIFF 16-bit<span class="video-only"> of this frame</span></button>
         <button data-export="lut">LUT .cube</button>
       </div>
     </div>
@@ -32,19 +32,19 @@
   <section class="stage" id="stage">
     <div class="empty" id="empty">
       <div class="empty-box">
-        <div class="empty-title">Arraste uma foto ou vídeo de mergulho aqui</div>
-        <div class="empty-sub">ou clique em <b>Abrir foto ou vídeo</b> (JPEG, PNG, TIFF, RAW/DNG, MP4, MOV)</div>
+        <div class="empty-title">Drop a dive photo or video here</div>
+        <div class="empty-sub">or click <b>Open photo or video</b> (JPEG, PNG, TIFF, RAW/DNG, MP4, MOV)</div>
       </div>
     </div>
 
     <div class="viewport" id="viewport" hidden>
       <div class="canvas" id="canvas">
         <img id="imgBefore" alt="Original" draggable="false">
-        <img id="imgAfter" alt="Corrigida" draggable="false">
-        <div class="veil-box" id="veilBox" hidden><span>luz de fundo</span></div>
+        <img id="imgAfter" alt="Corrected" draggable="false">
+        <div class="veil-box" id="veilBox" hidden><span>backscatter light</span></div>
         <div class="wb-marker" id="wbMarker" hidden></div>
         <div id="skinBoxes"></div>
-        <div class="split-line" id="splitLine"><span class="handle"></span><em class="tag l">Antes</em><em class="tag r">Depois</em></div>
+        <div class="split-line" id="splitLine"><span class="handle"></span><em class="tag l">Before</em><em class="tag r">After</em></div>
       </div>
     </div>
 
@@ -54,126 +54,126 @@
         <input type="range" id="scrub" min="0" max="1" step="0.01" value="0">
       </div>
       <div class="time" id="timeLabel">0:00</div>
-      <label class="btn ghost small" id="lutBtn" title="Para vídeo gravado em GP-Log: carregue o LUT oficial da GoPro (Log para Rec.709). Ele é aplicado antes da correção.">LUT de entrada<input type="file" id="lutInput" accept=".cube" hidden></label>
-      <button class="link" id="lutClear" hidden>remover LUT</button>
-      <div class="seg" id="colorMode" title="Adaptativa: a correção acompanha as mudanças de cena ao longo do vídeo, com transição suave. Fixa: usa a correção deste frame no vídeo inteiro.">
-        <button data-mode="adaptive" class="on">Cor adaptativa</button>
-        <button data-mode="fixed">Fixa neste frame</button>
+      <label class="btn ghost small" id="lutBtn" title="For video shot in GP-Log: load the official GoPro LUT (Log to Rec.709). It is applied before the correction.">Input LUT<input type="file" id="lutInput" accept=".cube" hidden></label>
+      <button class="link" id="lutClear" hidden>remove LUT</button>
+      <div class="seg" id="colorMode" title="Adaptive: the correction follows scene changes through the video, with smooth transitions. Fixed: uses this frame's correction for the whole video.">
+        <button data-mode="adaptive" class="on">Adaptive color</button>
+        <button data-mode="fixed">Fixed to this frame</button>
       </div>
     </div>
 
     <div class="job" id="job" hidden>
-      <div class="job-head"><b id="jobTitle">Exportando vídeo</b><button class="link" id="jobClose" hidden>fechar</button></div>
-      <figure class="job-preview" id="jobPreviewBox" hidden title="Clique para ampliar">
-        <img id="jobPreview" alt="Prévia da exportação">
+      <div class="job-head"><b id="jobTitle">Exporting video</b><button class="link" id="jobClose" hidden>close</button></div>
+      <figure class="job-preview" id="jobPreviewBox" hidden title="Click to enlarge">
+        <img id="jobPreview" alt="Export preview">
         <figcaption id="jobPreviewCap"></figcaption>
       </figure>
       <div class="bar"><div id="jobBar"></div></div>
       <div class="job-text" id="jobText"></div>
       <div class="job-actions">
-        <button class="btn ghost" id="jobCancel">Cancelar</button>
-        <a class="btn primary" id="jobDownload" hidden>Baixar MP4</a>
+        <button class="btn ghost" id="jobCancel">Cancel</button>
+        <a class="btn primary" id="jobDownload" hidden>Download MP4</a>
       </div>
     </div>
 
     <div class="stage-toolbar" id="stageToolbar" hidden>
       <div class="seg" id="viewSeg">
-        <button data-view="split" class="on">Antes | Depois</button>
-        <button data-view="after">Depois</button>
-        <button data-view="before">Antes</button>
-        <button data-view="haze">Mapa de névoa</button>
-        <button data-view="skinmask" class="skin-only">Máscara</button>
+        <button data-view="split" class="on">Before | After</button>
+        <button data-view="after">After</button>
+        <button data-view="before">Before</button>
+        <button data-view="haze">Haze map</button>
+        <button data-view="skinmask" class="skin-only">Mask</button>
       </div>
       <div class="seg">
-        <button id="zoomFit">Ajustar</button>
+        <button id="zoomFit">Fit</button>
         <button id="zoom100">100%</button>
       </div>
       <div class="status" id="status"><span class="live" id="liveDot"></span><span id="statusText"></span></div>
     </div>
 
-    <div class="busy" id="busy" hidden><div class="spinner"></div><div id="busyText">Processando…</div></div>
+    <div class="busy" id="busy" hidden><div class="spinner"></div><div id="busyText">Processing…</div></div>
   </section>
 
   <aside class="panel" id="panel">
     <div class="block">
-      <div class="block-title">Estilo</div>
+      <div class="block-title">Style</div>
       <div class="chips" id="presets"></div>
     </div>
 
     <div class="block hist-wrap"><canvas id="hist" width="600" height="140"></canvas></div>
 
     <details open>
-      <summary>Intensidade</summary>
-      <div class="slider" data-key="intensity" data-min="0" data-max="1" data-step="0.01" data-label="Intensidade geral" data-fmt="pct"></div>
+      <summary>Strength</summary>
+      <div class="slider" data-key="intensity" data-min="0" data-max="1" data-step="0.01" data-label="Overall strength" data-fmt="pct"></div>
     </details>
 
     <details open>
-      <summary>Água e névoa</summary>
-      <div class="seg full" id="methodSeg" title="Clássico: estima a névoa pela cor. Profundidade: usa IA para estimar a distância de cada ponto e corrige cada distância na medida certa (modelo físico Sea-thru).">
-        <button data-method="classic" class="on">Clássico</button>
-        <button data-method="depth">Profundidade (beta)</button>
+      <summary>Water and haze</summary>
+      <div class="seg full" id="methodSeg" title="Classic: estimates haze from color. Depth: uses AI to estimate the distance of each point and corrects each distance by the right amount (Sea-thru physical model).">
+        <button data-method="classic" class="on">Classic</button>
+        <button data-method="depth">Depth (beta)</button>
       </div>
-      <div class="slider depth-only" data-key="z_far" data-min="3" data-max="30" data-step="0.5" data-label="Distância do fundo visível" data-fmt="m"></div>
-      <div class="slider" data-key="dehaze" data-min="0" data-max="1" data-step="0.01" data-label="Remover névoa" data-fmt="pct"></div>
-      <div class="slider" data-key="water_protect" data-min="0" data-max="1" data-step="0.01" data-label="Cor da água aberta" data-fmt="pct"></div>
-      <div class="slider hue" data-key="water_hue" data-min="165" data-max="235" data-step="1" data-label="Tom da água" data-fmt="deg"></div>
+      <div class="slider depth-only" data-key="z_far" data-min="3" data-max="30" data-step="0.5" data-label="Visible background distance" data-fmt="m"></div>
+      <div class="slider" data-key="dehaze" data-min="0" data-max="1" data-step="0.01" data-label="Remove haze" data-fmt="pct"></div>
+      <div class="slider" data-key="water_protect" data-min="0" data-max="1" data-step="0.01" data-label="Open water color" data-fmt="pct"></div>
+      <div class="slider hue" data-key="water_hue" data-min="165" data-max="235" data-step="1" data-label="Water hue" data-fmt="deg"></div>
       <div class="info-row">
-        <span>Luz de fundo detectada</span>
+        <span>Detected backscatter light</span>
         <span class="swatch" id="veilSwatch"></span>
-        <button class="link" id="showVeil">mostrar</button>
+        <button class="link" id="showVeil">show</button>
       </div>
     </details>
 
     <details open>
-      <summary>Balanço de branco</summary>
+      <summary>White balance</summary>
       <div class="seg full" id="wbSeg">
-        <button data-wb="auto" class="on">Automático</button>
-        <button data-wb="pick">Conta-gotas</button>
-        <button data-wb="none">Desligado</button>
+        <button data-wb="auto" class="on">Auto</button>
+        <button data-wb="pick">Eyedropper</button>
+        <button data-wb="none">Off</button>
       </div>
-      <div class="hint" id="wbHint" hidden>Clique na foto em algo que deveria ser branco ou cinza neutro: areia clara, a barriga de uma arraia, um cilindro, uma lousa.</div>
-      <div class="info-row" id="wbRefRow" hidden><span>Referência escolhida</span><span class="swatch" id="wbSwatch"></span></div>
+      <div class="hint" id="wbHint" hidden>Click something in the photo that should be white or neutral gray: light sand, the belly of a ray, a tank, a slate.</div>
+      <div class="info-row" id="wbRefRow" hidden><span>Chosen reference</span><span class="swatch" id="wbSwatch"></span></div>
       <div class="skin-row">
-        <button class="btn small" id="skinBtn" title="Clique no corpo ou na pele de um mergulhador. A IA encontra o mergulhador e a pele dele e corrige o tom de pele (só o matiz; o brilho e a tonalidade da pele de cada pessoa são preservados).">Pele: clicar no mergulhador</button>
-        <button class="link" id="skinClear" hidden>limpar</button>
+        <button class="btn small" id="skinBtn" title="Click on a diver's body or skin. The AI finds the diver and their skin and corrects the skin tone (hue only; each person's brightness and skin tone are preserved).">Skin: click on the diver</button>
+        <button class="link" id="skinClear" hidden>clear</button>
       </div>
-      <div class="hint" id="skinHint" hidden>Clique no mergulhador (de preferência na pele: rosto, braço, perna). Esc cancela.</div>
-      <div class="info-row skin-only" id="skinInfo"><span id="skinCount">Pele</span><span class="swatch" id="skinBefore"></span><span>→</span><span class="swatch" id="skinAfter"></span></div>
-      <div class="slider skin-only" data-key="skin_strength" data-min="0" data-max="1" data-step="0.01" data-label="Correção de pele" data-fmt="pct"></div>
-      <div class="slider skin-only" data-key="skin_feather" data-min="0" data-max="1" data-step="0.01" data-label="Suavidade da borda da máscara" data-fmt="pct"></div>
-      <div class="slider skin-only" data-key="skin_body" data-min="0" data-max="1" data-step="0.01" data-label="Só a pele ↔ mergulhador inteiro" data-fmt="pct"></div>
-      <div class="slider" data-key="red_comp" data-min="0" data-max="2" data-step="0.01" data-label="Recuperar vermelho" data-fmt="x"></div>
-      <div class="slider" data-key="blue_comp" data-min="0" data-max="2" data-step="0.01" data-label="Recuperar azul (água verde)" data-fmt="x"></div>
-      <div class="slider temp" data-key="temperature" data-min="-1" data-max="1" data-step="0.01" data-label="Temperatura" data-fmt="signed"></div>
-      <div class="slider tint" data-key="tint" data-min="-1" data-max="1" data-step="0.01" data-label="Matiz verde / magenta" data-fmt="signed"></div>
+      <div class="hint" id="skinHint" hidden>Click on the diver (preferably on skin: face, arm, leg). Esc cancels.</div>
+      <div class="info-row skin-only" id="skinInfo"><span id="skinCount">Skin</span><span class="swatch" id="skinBefore"></span><span>→</span><span class="swatch" id="skinAfter"></span></div>
+      <div class="slider skin-only" data-key="skin_strength" data-min="0" data-max="1" data-step="0.01" data-label="Skin correction" data-fmt="pct"></div>
+      <div class="slider skin-only" data-key="skin_feather" data-min="0" data-max="1" data-step="0.01" data-label="Mask edge softness" data-fmt="pct"></div>
+      <div class="slider skin-only" data-key="skin_body" data-min="0" data-max="1" data-step="0.01" data-label="Skin only ↔ whole diver" data-fmt="pct"></div>
+      <div class="slider" data-key="red_comp" data-min="0" data-max="2" data-step="0.01" data-label="Recover red" data-fmt="x"></div>
+      <div class="slider" data-key="blue_comp" data-min="0" data-max="2" data-step="0.01" data-label="Recover blue (green water)" data-fmt="x"></div>
+      <div class="slider temp" data-key="temperature" data-min="-1" data-max="1" data-step="0.01" data-label="Temperature" data-fmt="signed"></div>
+      <div class="slider tint" data-key="tint" data-min="-1" data-max="1" data-step="0.01" data-label="Tint green / magenta" data-fmt="signed"></div>
     </details>
 
     <details open>
-      <summary>Tom</summary>
-      <div class="slider" data-key="exposure" data-min="-2" data-max="2" data-step="0.05" data-label="Exposição" data-fmt="ev"></div>
-      <div class="slider" data-key="auto_levels" data-min="0" data-max="1" data-step="0.01" data-label="Níveis automáticos" data-fmt="pct"></div>
-      <div class="slider" data-key="contrast" data-min="0" data-max="1" data-step="0.01" data-label="Contraste" data-fmt="pct"></div>
-      <div class="slider" data-key="highlights" data-min="-1" data-max="1" data-step="0.01" data-label="Realces" data-fmt="signed"></div>
-      <div class="slider" data-key="shadows" data-min="-1" data-max="1" data-step="0.01" data-label="Sombras" data-fmt="signed"></div>
+      <summary>Tone</summary>
+      <div class="slider" data-key="exposure" data-min="-2" data-max="2" data-step="0.05" data-label="Exposure" data-fmt="ev"></div>
+      <div class="slider" data-key="auto_levels" data-min="0" data-max="1" data-step="0.01" data-label="Auto levels" data-fmt="pct"></div>
+      <div class="slider" data-key="contrast" data-min="0" data-max="1" data-step="0.01" data-label="Contrast" data-fmt="pct"></div>
+      <div class="slider" data-key="highlights" data-min="-1" data-max="1" data-step="0.01" data-label="Highlights" data-fmt="signed"></div>
+      <div class="slider" data-key="shadows" data-min="-1" data-max="1" data-step="0.01" data-label="Shadows" data-fmt="signed"></div>
     </details>
 
     <details open>
-      <summary>Cor e detalhe</summary>
-      <div class="slider" data-key="vibrance" data-min="-1" data-max="1" data-step="0.01" data-label="Vibração" data-fmt="signed"></div>
-      <div class="slider" data-key="saturation" data-min="-1" data-max="1" data-step="0.01" data-label="Saturação" data-fmt="signed"></div>
-      <div class="slider" data-key="local_contrast" data-min="0" data-max="1" data-step="0.01" data-label="Contraste local" data-fmt="pct"></div>
-      <div class="slider" data-key="sharpen" data-min="0" data-max="1" data-step="0.01" data-label="Nitidez" data-fmt="pct"></div>
-      <div class="slider" data-key="denoise" data-min="0" data-max="1" data-step="0.01" data-label="Redução de ruído" data-fmt="pct"></div>
+      <summary>Color and detail</summary>
+      <div class="slider" data-key="vibrance" data-min="-1" data-max="1" data-step="0.01" data-label="Vibrance" data-fmt="signed"></div>
+      <div class="slider" data-key="saturation" data-min="-1" data-max="1" data-step="0.01" data-label="Saturation" data-fmt="signed"></div>
+      <div class="slider" data-key="local_contrast" data-min="0" data-max="1" data-step="0.01" data-label="Local contrast" data-fmt="pct"></div>
+      <div class="slider" data-key="sharpen" data-min="0" data-max="1" data-step="0.01" data-label="Sharpening" data-fmt="pct"></div>
+      <div class="slider" data-key="denoise" data-min="0" data-max="1" data-step="0.01" data-label="Noise reduction" data-fmt="pct"></div>
     </details>
 
     <div class="panel-foot">
-      <button class="btn ghost" id="resetAll">Restaurar padrão</button>
-      <div class="kbd-hint">Segure <kbd>B</kbd> para ver o original. Duplo clique num controle volta ao padrão. Roda do mouse dá zoom.</div>
+      <button class="btn ghost" id="resetAll">Reset to defaults</button>
+      <div class="kbd-hint">Hold <kbd>B</kbd> to see the original. Double-click a control to reset it. Scroll to zoom.</div>
     </div>
   </aside>
 </main>
 
-<div class="drop-overlay" id="dropOverlay" hidden><div>Solte o arquivo</div></div>
+<div class="drop-overlay" id="dropOverlay" hidden><div>Drop the file</div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script src="/static/app.js"></script>
