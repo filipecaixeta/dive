@@ -1,0 +1,30 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Personal media and runtime data (never committed)
+media/
+uploads/
+output/
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.jpg
+*.JPG
+*.jpeg
+*.png
+*.gpr
+*.GPR
+*.dng
+*.tif
+*.tiff
+!docs/screenshot.jpg
+
+# GoPro RAW converter: cloned and built by run.sh
+tools/
+
+# Local editor / OS files
+.claude/
+.DS_Store

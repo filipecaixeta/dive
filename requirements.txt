@@ -1,0 +1,12 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+numpy>=1.26
+opencv-python-headless>=4.9
+pillow>=10.3
+python-multipart>=0.0.9
+scipy>=1.11
+rawpy>=0.22
+# GPU engine + depth model (MPS on Apple Silicon, CUDA on NVIDIA, CPU otherwise)
+torch>=2.4
+transformers>=4.45
+accelerate>=0.30
